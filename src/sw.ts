@@ -12,8 +12,3 @@ clientsClaim();
 // This variable must be present somewhere in your service worker file,
 // even if you decide not to use precaching. See https://cra.link/PWA
 precacheAndRoute(self.__WB_MANIFEST);
-
-// Any other custom service worker logic can go here.
-self.addEventListener('fetch', () => {
-  // Add custom fetch logic if needed
-});

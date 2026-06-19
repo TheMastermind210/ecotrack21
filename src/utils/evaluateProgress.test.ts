@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateProgress } from '../layers/ai/useCarbonIntelligence';
+import { evaluateProgress } from './progress';
 import type { HistoryEntry } from '../types';
 
 const makeEntry = (overrides: Partial<HistoryEntry> & { co2_kg: number }): HistoryEntry => ({

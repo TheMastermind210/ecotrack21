@@ -2,17 +2,24 @@ import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import type { HistoryEntry } from '../types';
 import { CATEGORY_COLORS } from '../constants/categoryColors';
-import { evaluateProgress } from '../layers/ai/useCarbonIntelligence';
+import { evaluateProgress } from '../utils/progress';
 import { CategoryIcon } from './CategoryIcon';
 
 interface AttributionPanelProps {
   history: HistoryEntry[];
   narrative: string;
+  narrativesEnabled?: boolean;
+  onNarrativesEnabledChange?: (enabled: boolean) => void;
 }
 
 
 
-export const AttributionPanel: React.FC<AttributionPanelProps> = ({ history, narrative }) => {
+export const AttributionPanel: React.FC<AttributionPanelProps> = ({
+  history,
+  narrative,
+  narrativesEnabled = true,
+  onNarrativesEnabledChange,
+}) => {
   const categoryBreakdown = useMemo(() => {
     const categoryTotals = history.reduce((acc: Record<string, number>, curr) => {
       acc[curr.category] = (acc[curr.category] || 0) + curr.co2_kg;
@@ -46,6 +53,21 @@ export const AttributionPanel: React.FC<AttributionPanelProps> = ({ history, nar
   return (
     <div className="glass-panel attribution-panel-container">
       <h3 className="text-section-header">Carbon Intelligence</h3>
+      {onNarrativesEnabledChange && (
+        <label className="attribution-ai-toggle">
+          <input
+            type="checkbox"
+            checked={narrativesEnabled}
+            onChange={event => onNarrativesEnabledChange(event.target.checked)}
+          />
+          <span>
+            Personalized AI insights
+            <small>
+              Sends up to 10 recent entries to the secure server proxy.
+            </small>
+          </span>
+        </label>
+      )}
 
       {/* Top Source Bar Chart */}
       {history.length > 0 && (
@@ -153,6 +175,11 @@ export const AttributionPanel: React.FC<AttributionPanelProps> = ({ history, nar
         <div className="attribution-narrative-box">
           {narrative}
         </div>
+      )}
+      {!narrativesEnabled && history.length > 0 && (
+        <p className="attribution-privacy-status">
+          Personalized AI insights are off. Your saved history remains local.
+        </p>
       )}
 
       {/* Circular Progress Indicator */}

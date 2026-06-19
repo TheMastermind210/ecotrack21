@@ -4,11 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
     "build": "vite build",
+    "start": "node server/server.mjs",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "test": "vitest run"
+    "check:server": "node --check server/server.mjs && node --check server/appServer.mjs && node --check server/openRouterProxy.mjs && node --check scripts/dev.mjs",
+    "check": "npm run check:server && npm run typecheck && npm run lint && npm run test && npm run build",
+    "preview": "npm run build && node server/server.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@types/d3": "^7.4.3",

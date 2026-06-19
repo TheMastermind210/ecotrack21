@@ -44,27 +44,46 @@ describe('Core Pipeline Tests', () => {
     });
     Object.defineProperty(window, 'sessionStorage', {
       value: {
-        getItem: vi.fn((key) => key === 'ecotrack_api_key' ? 'test-key' : null),
+        getItem: vi.fn(() => null),
         setItem: vi.fn(),
         clear: vi.fn()
       },
       writable: true
     });
-    
-    // Mock fetch globally to return a valid NLPParsedResult JSON
+
+    // Mock same-origin AI proxy and external data endpoints.
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
-      if (url.includes('openrouter.ai')) {
+      if (url.includes('/api/parse-activity')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
-            choices: [{ message: { content: '{"category":"transport","quantity":40,"unit":"km","confidence":0.9,"activity":"drove"}' } }]
-          })
+            category: 'transport',
+            quantity: 40,
+            unit: 'km',
+            confidence: 0.9,
+            activity: 'drove',
+          }),
+        });
+      }
+      if (url.includes('/api/attribution')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            narrative: 'If you had cycled, you would have saved 3.2 kg',
+          }),
         });
       }
       if (url.includes('supply-chain.json')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve([])
+          json: () => Promise.resolve([{
+            id: 'user',
+            source: 'User',
+            factor: 0,
+            unit: 'kg',
+            category: 'user',
+            dependencies: [],
+          }])
         });
       }
       if (url.includes('gml.noaa.gov')) {
@@ -84,7 +103,7 @@ describe('Core Pipeline Tests', () => {
     // type "I drove 40km" into the CommandBar input
     const input = screen.getByPlaceholderText(/I drove/i);
     await userEvent.type(input, 'I drove 40km');
-    
+
     // wait a tick for WASM mock to resolve its init() promise
     await new Promise(resolve => setTimeout(resolve, 0));
 
@@ -105,18 +124,18 @@ describe('Core Pipeline Tests', () => {
     // Import the weekDelta calculation logic and assert that entries 
     // from last week are NOT included in "Today's Footprint" total.
     // We can test this by rendering the DataStrip component directly
-    
-    
+
+
     const today = new Date().toISOString();
     const lastWeek = new Date(Date.now() - 7 * 86400000).toISOString();
-    
+
     const mockHistory: HistoryEntry[] = [
       { id: 1, date: today, activity: 'drove', category: 'transport' as const, quantity: 10, unit: 'km', co2_kg: 5.0 },
       { id: 2, date: lastWeek, activity: 'drove', category: 'transport' as const, quantity: 10, unit: 'km', co2_kg: 10.0 }
     ];
 
     render(<DataStrip history={mockHistory} noaaPpm={420.00} />);
-    
+
     // Only today's entry (5.0) should be summed. If it summed both, it would be 15.0
     expect(screen.getByText('5.0')).toBeTruthy();
   });
@@ -128,17 +147,21 @@ describe('Core Pipeline Tests', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
-        choices: [{ message: { content: '{"category":"food","quantity":1,"unit":"meal","confidence":0.9,"activity":"ate a burger"}' } }]
-      })
+        category: 'food',
+        quantity: 1,
+        unit: 'meal',
+        confidence: 0.9,
+        activity: 'ate a burger',
+      }),
     }));
 
-    const { result } = renderHook(() => useCarbonIntelligence('test-key'));
-    
+    const { result } = renderHook(() => useCarbonIntelligence());
+
     let parsed: any; // eslint-disable-line @typescript-eslint/no-explicit-any
     await act(async () => {
       parsed = await result.current.parseActivity('I ate a burger');
     });
-    
+
     // Assert the returned object matches the expected schema exactly
     expect(parsed).toEqual({
       category: 'food',
@@ -160,70 +183,135 @@ describe('Core Pipeline Tests', () => {
     });
   });
 
-  // TEST 4 - API key modal
-  it('displays API key modal when no key is present', async () => {
-    // Render <App /> with no key in sessionStorage
-    Object.defineProperty(window, 'sessionStorage', {
-      value: {
-        getItem: vi.fn(() => null),
-        setItem: vi.fn(),
-        clear: vi.fn()
-      },
-      writable: true
-    });
-    
+  // TEST 4 - no browser API key
+  it('submits without requesting or storing an API key in the browser', async () => {
     render(<App />);
 
-    // Try to submit without a key
     const commandInput = screen.getByPlaceholderText(/I drove 40km/i);
-    await userEvent.type(commandInput, 'test activity');
+    await userEvent.type(commandInput, 'I drove 40km');
+    await new Promise(resolve => setTimeout(resolve, 0));
     const submitBtn = screen.getByRole('button', { name: /Submit/i });
     await userEvent.click(submitBtn);
 
-    // Assert the API key modal is visible
-    expect(await screen.findByText('OpenRouter API Key')).toBeTruthy();
-
-    // Type a key into the input and click "Save Key"
-    const input = screen.getByPlaceholderText('sk-or-v1-...');
-    await userEvent.type(input, 'new-api-key');
-    
-    const saveBtn = screen.getByRole('button', { name: /Save Key/i });
-    await userEvent.click(saveBtn);
-
-    // Assert the modal disappears
-    await waitFor(() => {
-      expect(screen.queryByText('OpenRouter API Key')).toBeNull();
-    });
-
-    // Assert sessionStorage contains the key
-    expect(window.sessionStorage.setItem).toHaveBeenCalledWith('ecotrack_api_key', 'new-api-key');
+    expect(await screen.findByText('drove')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const storedKeys = (window.sessionStorage.setItem as ReturnType<typeof vi.fn>)
+      .mock.calls
+      .map(([key]) => key);
+    expect(storedKeys).toEqual(['noaa_ppm']);
   });
 
-  // TEST 5 - API key modal demo data fallback
-  it('loads demo data when requested', async () => {
-    Object.defineProperty(window, 'sessionStorage', {
-      value: { getItem: vi.fn(() => null), setItem: vi.fn(), clear: vi.fn() },
-      writable: true
-    });
-    
+  // TEST 5 - optional narrative consent
+  it('keeps personalized history sharing off until the user opts in', async () => {
     render(<App />);
 
-    // Try to submit without a key to open modal
-    const commandInput = screen.getByPlaceholderText(/I drove 40km/i);
-    await userEvent.type(commandInput, 'test activity');
-    const submitBtn = screen.getByRole('button', { name: /Submit/i });
-    await userEvent.click(submitBtn);
+    const toggle = await screen.findByRole('checkbox', {
+      name: /Personalized AI insights/i,
+    });
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+    await userEvent.click(toggle);
+    expect(window.sessionStorage.setItem).toHaveBeenCalledWith(
+      'ecotrack_narratives_enabled',
+      'true',
+    );
+  });
 
-    // Click demo data button
-    const demoBtn = await screen.findByText('Skip — load sample data');
-    await userEvent.click(demoBtn);
+  // TEST 6 - getAttributionNarrative
+  it('generates attribution narrative from history', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        narrative: 'If you had cycled instead, you would have saved 3.2 kg CO2',
+      })
+    }));
 
-    // Modal should close
-    await waitFor(() => {
-      expect(screen.queryByText('OpenRouter API Key')).toBeNull();
+    const { result } = renderHook(() => useCarbonIntelligence());
+
+    const mockHistory: HistoryEntry[] = [
+      { id: 1, date: new Date().toISOString(), activity: 'drove', category: 'transport' as const, quantity: 40, unit: 'km', co2_kg: 7.6 }
+    ];
+
+    let narrative: string = '';
+    await act(async () => {
+      narrative = await result.current.getAttributionNarrative(mockHistory);
     });
 
-    // History should be populated with demo data
-    expect(await screen.findByText(/Drove 20 miles to work/i)).toBeTruthy();
+    expect(narrative).toBe('If you had cycled instead, you would have saved 3.2 kg CO2');
+  });
+
+  // TEST 7 - getAttributionNarrative empty history
+  it('returns fallback message for empty history', async () => {
+    const { result } = renderHook(() => useCarbonIntelligence());
+
+    let narrative: string = '';
+    await act(async () => {
+      narrative = await result.current.getAttributionNarrative([]);
+    });
+
+    expect(narrative).toBe('Not enough data yet.');
+  });
+
+  // TEST 8 - getAttributionNarrative API failure
+  it('handles narrative API failure gracefully', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500
+    }));
+
+    const { result } = renderHook(() => useCarbonIntelligence());
+
+    const mockHistory: HistoryEntry[] = [
+      { id: 1, date: new Date().toISOString(), activity: 'drove', category: 'transport' as const, quantity: 40, unit: 'km', co2_kg: 7.6 }
+    ];
+
+    let narrative: string = '';
+    await act(async () => {
+      narrative = await result.current.getAttributionNarrative(mockHistory);
+    });
+
+    expect(narrative).toBe('Track more activities to unlock personalized insights.');
+  });
+
+  it('asks for clarification instead of calculating low-confidence AI output', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/parse-activity')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            category: 'transport',
+            quantity: 1,
+            unit: 'trip',
+            confidence: 0.4,
+            activity: 'travelled',
+            clarification_needed: true,
+          }),
+        });
+      }
+      if (url.includes('supply-chain.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{
+            id: 'user',
+            source: 'User',
+            factor: 0,
+            unit: 'kg',
+            category: 'user',
+            dependencies: [],
+          }]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        text: () => Promise.resolve('2026 6 8 429.11 427.75'),
+      });
+    }));
+
+    render(<App />);
+    await userEvent.type(screen.getByPlaceholderText(/I drove/i), 'I travelled');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await userEvent.click(screen.getByRole('button', { name: /Submit/i }));
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/add a quantity and unit/i);
+    expect(screen.queryByText('travelled')).toBeNull();
   });
 });

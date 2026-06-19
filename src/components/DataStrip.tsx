@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react';
 import type { HistoryEntry } from '../types';
+import { getIsoWeekKey, getLocalDateKey } from '../utils/date';
 
 export const DataStrip: React.FC<{ history: HistoryEntry[]; noaaPpm?: number }> = ({
   history,
   noaaPpm,
 }) => {
   const totalEmissions = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0] || '';
+    const today = getLocalDateKey(new Date());
     return history
-      .filter(item => item.date.startsWith(today))
+      .filter(item => getLocalDateKey(item.date) === today)
       .reduce((sum, item) => sum + item.co2_kg, 0)
       .toFixed(1);
   }, [history]);
@@ -16,31 +17,21 @@ export const DataStrip: React.FC<{ history: HistoryEntry[]; noaaPpm?: number }> 
   const weekDelta = useMemo(() => {
     if (history.length === 0) return 0;
 
-    const getWeekKey = (isoDate: string | Date) => {
-      const d = new Date(isoDate);
-      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-      const dayNum = date.getUTCDay() || 7;
-      date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-      const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-      return `${date.getUTCFullYear()}-W${weekNo}`;
-    };
-
     const now = new Date();
-    const thisWeekKey = getWeekKey(now);
+    const thisWeekKey = getIsoWeekKey(now);
     
     // To get last week key reliably across year boundaries, subtract 7 days
     const lastWeekDate = new Date(now.getTime() - 7 * 86400000);
-    const lastWeekKey = getWeekKey(lastWeekDate);
+    const lastWeekKey = getIsoWeekKey(lastWeekDate);
 
     const grouped = history.reduce((acc: Record<string, number>, entry) => {
-      const key = getWeekKey(entry.date);
-      acc[key] = (acc[key] || 0) + entry.co2_kg;
+      const key = getIsoWeekKey(entry.date);
+      if (key) acc[key] = (acc[key] || 0) + entry.co2_kg;
       return acc;
     }, {});
 
-    const thisWeek = grouped[thisWeekKey] || 0;
-    const lastWeek = grouped[lastWeekKey] || 0;
+    const thisWeek = thisWeekKey ? grouped[thisWeekKey] || 0 : 0;
+    const lastWeek = lastWeekKey ? grouped[lastWeekKey] || 0 : 0;
 
     if (lastWeek === 0 && history.length >= 2) {
       const avg =

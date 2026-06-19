@@ -1,17 +1,36 @@
 # Security Policy
 
-We take the security of our application and user data seriously.
+## Credential handling
 
-## API Key Storage
+The OpenRouter credential must be supplied to the Node server through the
+`OPENROUTER_API_KEY` environment variable. It is never embedded into the Vite
+bundle, returned by an API response, or stored in LocalStorage/SessionStorage.
 
-For the privacy and security of our users, this application does not store any API keys on a centralized backend server. 
+Do not prefix the variable with `VITE_`; Vite-prefixed variables are exposed to
+client code.
 
-Instead, API keys (such as the OpenRouter API key) are stored **only in the browser's `sessionStorage`**. This ensures that the key is only retained for the duration of your session and is cleared when the tab or window is closed.
+## Proxy protections
 
-## Data Transmission
+The same-origin proxy provides:
 
-The API key is never sent to any backend server operated by this application. It is only sent directly to **OpenRouter** to authenticate your requests.
+- request content-type and body-size enforcement;
+- runtime validation for activity and history payloads;
+- a 15-second upstream timeout;
+- safe upstream errors without provider response bodies;
+- origin checks and per-client in-memory rate limiting;
+- `nosniff`, frame-denial, permissions-policy, and referrer-policy headers.
 
-## Reporting a Vulnerability
+For a public horizontally scaled deployment, replace the in-memory limiter
+with a shared rate-limit store and add platform-level authentication or abuse
+protection.
 
-If you discover a security vulnerability within this project, please send an e-mail to the maintainers. All security vulnerabilities will be promptly addressed.
+## Data transmission
+
+Activity text is sent to OpenRouter for parsing. Personalized narratives are
+optional and send at most 10 validated recent entries after the user enables
+the feature. Activity history otherwise remains in browser LocalStorage.
+
+## Reporting a vulnerability
+
+Report suspected vulnerabilities privately to the project maintainers. Do not
+include active credentials in an issue, log, screenshot, or test fixture.

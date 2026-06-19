@@ -1,8 +1,12 @@
+export const ACTIVITY_CATEGORIES = ['transport', 'food', 'energy', 'goods'] as const;
+
+export type ActivityCategory = typeof ACTIVITY_CATEGORIES[number];
+
 export interface HistoryEntry {
   id: number;
   date: string;
   activity: string;
-  category: 'transport' | 'food' | 'energy' | 'goods';
+  category: ActivityCategory;
   quantity: number;
   unit: string;
   co2_kg: number;

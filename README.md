@@ -2,85 +2,115 @@
 
 **PromptWars Hackathon — Challenge 3 Submission**
 
-EcoTrack is a serverless Carbon Footprint Awareness Platform built with a **3-Layer Architecture**: React 19 UI, Claude AI (NLP parsing via OpenRouter), and Rust/WASM (deterministic calculation), with client-side data persistence.
+EcoTrack combines a React 19 interface, a secure same-origin Node proxy, Claude
+through OpenRouter, and a deterministic Rust/WebAssembly emissions engine.
 
 ## Architecture
 
+```text
+Browser → /api proxy → OpenRouter/Claude
+        → Rust WASM calculation → React visualizations
 ```
-User Input → Claude AI (NLP) → Rust WASM (Math) → React UI (Visualization)
-```
 
-### Layer 1: UI (React 19 + Vite + D3.js + Recharts)
-- Live `requestAnimationFrame` CO₂ clock with NOAA baseline
-- D3.js force-directed graph visualizing Scope 3 supply chain emissions with keyboard navigation
-- Recharts bar charts with category breakdowns and SVG pattern fills for accessibility
-- Dark-mode glassmorphism design system
+### Frontend
 
-### Layer 2: AI (Claude via OpenRouter)
-- Natural language activity parsing → strict JSON schema extraction
-- Counterfactual "Attribution Narratives" for behavioral guidance
-- Input validation ensures only valid categories/quantities pass through
-- Markdown fence stripping for robust LLM response parsing
+- React 19, Vite, D3.js, Recharts, and an offline-capable service worker
+- Natural-language activity capture and accessible carbon visualizations
+- Local activity-history persistence; no API credentials in browser storage
+- Optional personalized narratives, disabled until the user opts in
 
-### Layer 3: Engine (Rust → WebAssembly)
-- Deterministic emission factor multiplication compiled to `.wasm` via `wasm-pack`
-- Categories: transport (0.19 kg/km), food (2.5 kg/meal), energy (0.4 kg/kWh), goods (15.0 kg/item)
-- Returns `-1.0` as error sentinel for graceful fallback
+### Secure AI proxy
 
-### Data Persistence (Client-Side)
-- LocalStorage for activity history persistence
-- SessionStorage for API key (cleared on tab close) and NOAA cache
-- Service Worker with Workbox precaching for offline asset delivery
+- OpenRouter key exists only in the server environment
+- Same-origin `/api/parse-activity` and `/api/attribution` endpoints
+- Request body limits, schema validation, provider timeout, safe error messages
+- Origin enforcement, per-client rate limiting, and security headers
+- Provider output is validated again before it reaches the browser
 
-## Security
+### Rust/WebAssembly engine
 
-- API keys are collected via an accessible in-app modal (not `window.prompt()`)
-- Keys are stored in `sessionStorage` only — never `localStorage` or disk
-- No API keys are committed; `.env.example` provided as template
-- Content Security Policy restricts `connect-src` to `openrouter.ai` and `gml.noaa.gov`
-- LLM output is validated against a strict schema before use
+- Deterministic emission-factor multiplication
+- Supported categories: transport, food, energy, and goods
+- Invalid, negative, malformed, and unknown-category inputs are rejected
 
-## Getting Started
+## Security model
+
+- `OPENROUTER_API_KEY` is read server-side from the environment
+- The frontend bundle contains no provider URL, authorization header, or key
+- The browser connects only to same-origin `/api` endpoints and NOAA
+- CSP blocks framing and general script `unsafe-inline`/`unsafe-eval`; only
+  WebAssembly compilation is permitted
+- Personalized narrative requests contain at most 10 validated recent entries
+- API responses never expose provider response bodies or credentials
+
+## Getting started
 
 ```bash
-git clone <repo-url>
-cd ecotrack
+cp .env.example .env
+# Set OPENROUTER_API_KEY in .env
 npm install
-npm run dev                   # Opens at http://localhost:5173
+npm run dev
 ```
 
-**Note:** The WASM engine is pre-compiled in `pkg/`. No Rust toolchain required for the demo.  
-On first use, enter your OpenRouter API key when prompted.
+Development URLs:
+
+- Frontend: `http://127.0.0.1:5173`
+- API proxy: `http://127.0.0.1:8787`
+
+The Vite development server proxies `/api` to the local Node server.
+
+## Production
+
+```bash
+npm run build
+OPENROUTER_API_KEY=your-key HOST=0.0.0.0 PORT=8787 npm start
+```
+
+The Node server serves `dist/` and the same-origin API endpoints. The WASM
+engine is precompiled in `pkg/`; end users do not need a Rust toolchain.
 
 ## Testing
 
 ```bash
 npm test
+npm run test:coverage
+npm run check
+cargo test
 ```
 
-Tests cover:
-- Full activity submission pipeline (type → AI parse → WASM calc → UI render)
-- DataStrip today-only filtering (verifies last week's entries are excluded)
-- `useCarbonIntelligence` hook: successful parse + 401 error handling
-- API key modal flow: display, input, save, sessionStorage verification
-- `evaluateProgress` scoring: empty history, bounds clamping, improvement detection
+The suite covers:
 
-## Known Limitations
+- Complete activity flow from proxy response through WASM to rendered history
+- Confirmation that the browser sends no API key or authorization header
+- Server-side credential isolation and safe missing-configuration behavior
+- Origin checks, security headers, payload limits, and provider validation
+- Low-confidence AI clarification behavior
+- Local-calendar and ISO-week calculations
+- Supply-chain graph runtime validation
+- Corrupt browser-storage recovery
+- Rust engine calculations and invalid-input rejection
 
-- WASM engine handles 4 categories; real-world usage would need 50+
-- Service Worker caches static assets only; API responses are excluded
-- No user authentication — all data is local to the browser
-- NOAA `.txt` endpoint is parsed manually; if the format changes, the parser falls back to a baseline value
-- CSP uses `'unsafe-inline'` and `'unsafe-eval'` due to Vite's runtime requirements
+Current JavaScript/TypeScript coverage gates require at least 80% statements,
+functions, and lines plus 70% branches.
 
-## Tech Stack
+## Known limitations
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------| 
-| UI | React 19, D3.js, Recharts, Lucide | Rendering & visualization |
-| AI | Claude 3 Haiku via OpenRouter | NLP parsing & narratives |
-| Engine | Rust, wasm-bindgen, serde | Deterministic math |
-| Data | LocalStorage, SessionStorage, Service Worker | Persistence & offline |
+- The proxy uses in-memory rate limiting; horizontally scaled production
+  deployments should use a shared store such as Redis.
+- There is no user authentication, so the proxy should be deployed behind
+  platform-level abuse protection for a public high-traffic launch.
+- The WASM engine currently supports four broad categories.
+- API responses are intentionally not cached offline.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| UI | React 19, Vite, D3.js, Recharts, Lucide |
+| Proxy | Node.js HTTP server |
+| AI | Claude via OpenRouter |
+| Engine | Rust, wasm-bindgen, serde |
+| Storage | LocalStorage, SessionStorage, Workbox |
 
 ## License
 

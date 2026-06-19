@@ -39,14 +39,10 @@ export const CommandBar: React.FC<CommandBarProps> = ({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                onSubmit(e as unknown as React.FormEvent);
-              }
-            }}
             onFocus={() => setShowHint(true)}
             onBlur={() => setShowHint(false)}
+            aria-label="Describe a carbon-producing activity"
+            maxLength={500}
             placeholder={
               isProcessing
                 ? 'Claude is thinking...'

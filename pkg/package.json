@@ -1,7 +1,9 @@
 {
   "name": "carbon-engine",
   "type": "module",
+  "description": "Deterministic WebAssembly carbon-emissions calculation engine for EcoTrack",
   "version": "0.1.0",
+  "license": "MIT",
   "files": [
     "carbon_engine_bg.wasm",
     "carbon_engine.js",
