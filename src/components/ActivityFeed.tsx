@@ -3,6 +3,7 @@ import type { HistoryEntry } from '../types';
 import { CATEGORY_COLORS } from '../constants/categoryColors';
 import { CategoryIcon } from './CategoryIcon';
 
+/** Renders the 5 most recent carbon activity entries with category icons and CO₂ amounts. */
 export const ActivityFeed: React.FC<{ history: HistoryEntry[] }> = ({ history }) => {
   const recent = history.slice(0, 5);
 

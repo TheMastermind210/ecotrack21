@@ -1,5 +1,6 @@
 import React from 'react';
 
+/** Three-zone responsive layout: sticky command bar, data strip, and split intelligence panels. */
 export const Layout: React.FC<{
   commandBar: React.ReactNode;
   dataStrip: React.ReactNode;

@@ -1,5 +1,6 @@
 const DAY_MS = 86_400_000;
 
+/** Converts a Date or ISO string to a local YYYY-MM-DD key for daily aggregation. Returns null for invalid dates. */
 export function getLocalDateKey(date: Date | string): string | null {
   const parsed = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(parsed.getTime())) return null;
@@ -10,6 +11,7 @@ export function getLocalDateKey(date: Date | string): string | null {
   return `${year}-${month}-${day}`;
 }
 
+/** Converts a Date or ISO string to an ISO week key (e.g. "2025-W03") for weekly comparisons. Returns null for invalid dates. */
 export function getIsoWeekKey(date: Date | string): string | null {
   const parsed = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(parsed.getTime())) return null;

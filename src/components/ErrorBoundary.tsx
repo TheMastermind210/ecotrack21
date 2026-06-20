@@ -3,6 +3,7 @@ import { Component, ReactNode } from 'react';
 interface Props { children: ReactNode; }
 interface State { hasError: boolean; error: Error | null; }
 
+/** React error boundary that catches render errors and displays a recovery UI with reload button. */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);

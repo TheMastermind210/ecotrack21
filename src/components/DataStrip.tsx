@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import type { HistoryEntry } from '../types';
 import { getIsoWeekKey, getLocalDateKey } from '../utils/date';
 
+/** Four-column metrics strip showing today's footprint, week delta, top source, and global CO₂ PPM. */
 export const DataStrip: React.FC<{ history: HistoryEntry[]; noaaPpm?: number }> = ({
   history,
   noaaPpm,

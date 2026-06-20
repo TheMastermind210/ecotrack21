@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { HistoryEntry } from '../types';
 import { readHistory } from '../utils/storage';
 
+/** Manages carbon history state with automatic localStorage persistence and error recovery. */
 export function usePersistentHistory() {
   const [history, setHistory] = useState<HistoryEntry[]>(() => readHistory(localStorage));
   const [storageError, setStorageError] = useState('');

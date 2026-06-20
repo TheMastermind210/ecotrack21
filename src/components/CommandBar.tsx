@@ -10,6 +10,7 @@ interface CommandBarProps {
   noaaPpm?: number;
 }
 
+/** Header bar with NLP activity input, WASM readiness badge, and live CO₂ clock. */
 export const CommandBar: React.FC<CommandBarProps> = ({
   inputText,
   setInputText,

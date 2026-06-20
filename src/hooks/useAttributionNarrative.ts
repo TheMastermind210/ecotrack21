@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { HistoryEntry } from '../types';
 
+/** Fetches an AI-generated counterfactual narrative after a 2-second debounce. Aborts on unmount. */
 export function useAttributionNarrative(
   history: HistoryEntry[],
   enabled: boolean,

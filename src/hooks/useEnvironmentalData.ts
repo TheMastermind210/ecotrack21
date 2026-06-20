@@ -6,6 +6,7 @@ import { validateSupplyChainData } from '../utils/supplyChain';
 const isValidPpm = (value: number) =>
   Number.isFinite(value) && value >= 380 && value <= 450;
 
+/** Loads NOAA atmospheric CO₂ data and supply chain graph nodes on mount. Validates all external data. */
 export function useEnvironmentalData() {
   const [supplyChainData, setSupplyChainData] = useState<SupplyChainNode[]>([]);
   const [noaaPpm, setNoaaPpm] = useState<number>();

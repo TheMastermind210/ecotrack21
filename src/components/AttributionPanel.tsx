@@ -13,7 +13,7 @@ interface AttributionPanelProps {
 }
 
 
-
+/** Carbon intelligence dashboard with category breakdown chart, score gauge, and AI narrative. */
 export const AttributionPanel: React.FC<AttributionPanelProps> = ({
   history,
   narrative,

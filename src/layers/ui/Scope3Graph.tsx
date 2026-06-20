@@ -14,6 +14,7 @@ interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
   value: number;
 }
 
+/** Interactive D3 force-directed graph visualizing Scope 3 supply chain emission sources. */
 export const Scope3Graph: React.FC<{ data: SupplyChainNode[] }> = ({ data }) => {
   const d3Container = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);

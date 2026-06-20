@@ -1,5 +1,6 @@
 import { Car, Utensils, Zap, Package } from 'lucide-react';
 
+/** Returns a Lucide icon matching the carbon emission category (transport, food, energy, goods). */
 export const CategoryIcon = ({ category, size = 14 }: { category: string; size?: number }) => {
   switch (category) {
     case 'transport': return <Car size={size} aria-label="Transport" />;

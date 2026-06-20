@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 // Hardcoded fallback baseline as per error-handling specs
 const FALLBACK_PPM = 421.08; 
 
+/** Real-time atmospheric CO₂ counter using requestAnimationFrame for smooth PPM increments. */
 export const CO2Clock: React.FC<{ initialPpm?: number; compact?: boolean }> = ({ initialPpm, compact }) => {
   const [ppm, setPpm] = useState(initialPpm || FALLBACK_PPM);
   const [announcedPpm, setAnnouncedPpm] = useState(initialPpm || FALLBACK_PPM);
