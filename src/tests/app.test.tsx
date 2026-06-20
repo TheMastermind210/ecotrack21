@@ -157,7 +157,7 @@ describe('Core Pipeline Tests', () => {
 
     const { result } = renderHook(() => useCarbonIntelligence());
 
-    let parsed: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    let parsed: unknown;
     await act(async () => {
       parsed = await result.current.parseActivity('I ate a burger');
     });

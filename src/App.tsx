@@ -10,6 +10,8 @@ import { useEnvironmentalData } from './hooks/useEnvironmentalData';
 import { useAttributionNarrative } from './hooks/useAttributionNarrative';
 import init, { carbon_calc } from '../pkg/carbon_engine';
 import type { HistoryEntry } from './types';
+import { OnboardingModal } from './components/OnboardingModal';
+import { getDemoData } from './constants/demoData';
 import './index.css';
 
 const Scope3Graph = lazy(() => import('./layers/ui/Scope3Graph').then(m => ({ default: m.Scope3Graph })));
@@ -22,6 +24,7 @@ function App() {
   const [inputText, setInputText] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [wasmReady, setWasmReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const { parseActivity, getAttributionNarrative, isProcessing } = useCarbonIntelligence();
   const { history, setHistory, storageError } = usePersistentHistory();
@@ -45,6 +48,19 @@ function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (history.length === 0) {
+      setShowOnboarding(true);
+    } else {
+      setShowOnboarding(false);
+    }
+  }, [history.length]);
+
+  const handleDemoData = () => {
+    setHistory(getDemoData());
+    setShowOnboarding(false);
+  };
 
   const handleSubmitActivity = async (e: FormEvent) => {
     e.preventDefault();
@@ -93,6 +109,11 @@ function App() {
 
   return (
     <>
+      <OnboardingModal 
+        show={showOnboarding} 
+        onClose={() => setShowOnboarding(false)} 
+        onDemoData={handleDemoData}
+      />
       <Layout
         commandBar={
           <ErrorBoundary>

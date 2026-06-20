@@ -43,7 +43,7 @@ export const AttributionPanel: React.FC<AttributionPanelProps> = ({
     const { x, y, payload } = props as { x: number; y: number; payload: { value: string } };
     return (
       <g transform={`translate(${x},${y})`}>
-        <text x={-20} y={4} dy={0} textAnchor="end" fill="var(--text-secondary)" fontSize={11} style={{ textTransform: 'capitalize' }}>
+        <text x={-20} y={4} dy={0} textAnchor="end" fill="var(--text-secondary)" fontSize={11} className="capitalize-text">
           {payload.value}
         </text>
       </g>
@@ -127,8 +127,7 @@ export const AttributionPanel: React.FC<AttributionPanelProps> = ({
                     color: 'var(--text-primary)'
                   }}
                   itemStyle={{ color: 'var(--text-secondary)' }}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Recharts Formatter generic is overly broad
-                  formatter={(value: any) => [`${Number(value).toFixed(2)} kg CO₂`, 'Emissions']}
+                  formatter={(value: unknown) => [`${Number(value || 0).toFixed(2)} kg CO₂`, 'Emissions']}
                 />
                 <Bar 
                   dataKey="total" 
@@ -137,12 +136,11 @@ export const AttributionPanel: React.FC<AttributionPanelProps> = ({
                     position: 'right', 
                     fill: 'var(--text-secondary)', 
                     fontSize: 11,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Recharts LabelFormatter type mismatch
-                    formatter: (v: any) => `${Number(v).toFixed(1)}kg`
+                    formatter: (v: unknown) => `${Number(v || 0).toFixed(1)}kg`
                   }}
                 >
                   <LabelList dataKey="category" position="insideLeft" 
-                    style={{ fill: 'var(--text-primary)', fontSize: 11, textTransform: 'capitalize' }} 
+                    className="attribution-label-list"
                   />
                   {categoryBreakdown.map((entry, index) => {
                     const patternId = `url(#pattern-${entry.category})`;
@@ -195,7 +193,7 @@ export const AttributionPanel: React.FC<AttributionPanelProps> = ({
                 strokeWidth="8" 
                 strokeDasharray={history.length > 0 ? arcStrokeDasharray : "0 283"}
                 strokeLinecap="round"
-                style={{ transition: 'stroke-dasharray 1s ease-in-out' }}
+                className="gauge-transition"
               />
             </svg>
             <div className="attribution-score-value">
